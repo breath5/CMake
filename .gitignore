@@ -1,0 +1,20 @@
+### CMake ###
+cmake-build-*/
+CMakeCache.txt
+CMakeFiles/
+CMakeScripts/
+Makefile
+cmake_install.cmake
+*.cmake
+
+### IDE ###
+.vscode/
+.idea/
+
+### 编译产物 ###
+*.o
+*.a
+*.so
+*.dll
+*.exe
+*.out
