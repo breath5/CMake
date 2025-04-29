@@ -1,0 +1,45 @@
+是的，当`App`通过`target_link_libraries(App PRIVATE CalculatorLib)`链接`CalculatorLib`时，若`CalculatorLib`在`target_link_directories`中使用`PUBLIC`关键字声明了`"${CMAKE_CURRENT_SOURCE_DIR}/include"`目录，则`App`在链接时会自动包含该目录的库搜索路径。但需注意以下几点：
+
+---
+
+1. **PUBLIC关键字的作用**
+   • `PUBLIC`会将目录同时添加到`CalculatorLib`的私有属性（自身链接时生效）和接口属性（依赖目标继承）中。
+
+   • 即使`App`使用`PRIVATE`链接`CalculatorLib`，`CalculatorLib`的接口属性（通过`PUBLIC`声明的目录）仍会被`App`继承。
+
+
+---
+
+2. **对`App`的影响**
+   • 链接阶段：`App`在链接时会将`"${CMAKE_CURRENT_SOURCE_DIR}/include"`目录作为库文件搜索路径。这意味着链接器会在此目录中查找`CalculatorLib`依赖的库文件（如`.so`或`.a`）。
+
+   • 头文件包含：如果目标是让`App`包含`"${CMAKE_CURRENT_SOURCE_DIR}/include"`中的头文件，需使用`target_include_directories()`而非`target_link_directories()`。两者的作用不同：
+
+     ◦ `target_include_directories`：控制头文件路径的包含（编译阶段）。
+
+     ◦ `target_link_directories`：控制库文件的搜索路径（链接阶段）。
+
+
+---
+
+3. **PRIVATE链接的作用**
+   • `PRIVATE`仅表示`App`不会将`CalculatorLib`的依赖传递给其他依赖`App`的目标，但`App`自身仍会继承`CalculatorLib`的所有接口属性（包括`PUBLIC`声明的目录）。
+
+   • 若`CalculatorLib`的`target_link_directories`使用`PRIVATE`，则`App`不会继承该目录。
+
+
+---
+
+4. **常见误解澄清**
+   • 头文件与库文件的区别：用户问题中的`"${CMAKE_CURRENT_SOURCE_DIR}/include"`可能涉及头文件路径，但`target_link_directories`实际影响的是库文件搜索路径。若需头文件包含，应使用`target_include_directories()`并同样通过`PUBLIC`传递。
+
+   • 作用域传递性：`PUBLIC`的传递性独立于链接类型（`PRIVATE`/`PUBLIC`）。即使`App`以`PRIVATE`链接`CalculatorLib`，只要`CalculatorLib`的目录声明为`PUBLIC`，`App`仍会继承该目录。
+
+
+---
+
+总结
+• App能否使用`"${CMAKE_CURRENT_SOURCE_DIR}/include`的内容：
+
+  若该目录包含库文件，则`App`在链接时会自动搜索此目录；若包含头文件，需通过`target_include_directories()`声明并传递。
+• 核心原则：`PUBLIC`/`PRIVATE`控制的是属性的传递性，而非目标自身的可见性。接口属性（如`PUBLIC`声明的目录）始终会被依赖目标继承。

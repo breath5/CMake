@@ -1,6 +1,6 @@
 #include <stdio.h>
-#include "../lib/include/add.h"
-#include "../lib/include/sub.h"
+#include "add/add.h"
+#include "sub/sub.h"
 int main(void) {
     int a = 5, b = 3;
     printf("Hello, World!\n");
