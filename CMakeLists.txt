@@ -15,7 +15,7 @@ add_subdirectory(sub)
 
 # 添加主程序并链接库
 add_executable(${PROJECT_NAME} main.cpp ${PROJECT_SOURCES}) # 使用全局收集的源文件
-target_link_libraries(${PROJECT_NAME} PRIVATE Add Sub) # 链接库
+#target_link_libraries(${PROJECT_NAME} PRIVATE Add Sub) # 链接库
 
 
 
