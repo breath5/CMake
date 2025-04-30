@@ -1,23 +1,21 @@
-# 创建测试可执行文件
-add_executable(MathTests
-        test_math.cpp
-)
+# 启用测试
+enable_testing()
 
-# 链接依赖项
-target_link_libraries(MathTests
+# 测试可执行文件
+add_executable(AlgorithmTests test_algorithm.cpp)
+target_link_libraries(AlgorithmTests
         PRIVATE
-        MathLib
+        Algorithm
         GTest::gtest_main
 )
 
-# 注册测试用例
-add_test(
-        NAME MathUnitTests
-        COMMAND MathTests
+# 测试发现
+include(GoogleTest)
+gtest_discover_tests(AlgorithmTests
+        EXTRA_ARGS --gtest_output=xml:${CMAKE_BINARY_DIR}/test_results/
 )
 
-# 启用内存检查（可选）
-if(CMAKE_BUILD_TYPE STREQUAL "Debug")
-    target_compile_options(MathTests PRIVATE -fsanitize=address)
-    target_link_options(MathTests PRIVATE -fsanitize=address)
-endif()
+# 安装测试工具
+install(TARGETS AlgorithmTests
+        DESTINATION ${CMAKE_INSTALL_BINDIR}/tests
+)
