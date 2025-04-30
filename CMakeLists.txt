@@ -1,33 +1,57 @@
 cmake_minimum_required(VERSION 3.28)
-project(LibraryProject CXX)
-
-#全局编译选项（传递到子模块）
-set(CMAKE_CXX_STANDARD 17)
-set(CMAKE_CXX_STANDARD_REQUIRED ON)
-
-# 全局源文件集合（CACHE INTERNAL保证全局可见）
-set(PROJECT_SOURCES "" CACHE INTERNAL "All project sources")
-
-# 添加子目录  （顺序很重要：库先于应用（在Makefile中同时存在这种情况））
-add_subdirectory(add)
-add_subdirectory(sub)
+project(ExternalLibDemo CXX)
 
 
-# 添加主程序并链接库
-add_executable(${PROJECT_NAME} main.cpp ${PROJECT_SOURCES}) # 使用全局收集的源文件
-#target_link_libraries(${PROJECT_NAME} PRIVATE Add Sub) # 链接库
+# 可选：设置第三方库搜索策略
+set(CMAKE_FIND_PACKAGE_PREFER_CONFIG TRUE)  # 优先使用Config模式
+# [1] 尝试查找系统安装的库 -------------------------------------------------
+find_package(OpenCV QUIET)
+# [2] 系统库未找到时使用本地备用库 ------------------------------------------
+if(NOT OpenCV_FOUND)
+    message(STATUS "OpenCV not found, using local backup.")
+    #设置本地库路径
+    set(LOCAL_OPENCV_DIR "${CMAKE_SOURCE_DIR}/third_party/some_lib")
+    # 验证头文件存在
+    if(NOT EXITS "${LOCAL_OPENCV_DIR}/include/opencv2/core.hpp")
+        message(FATAL_ERROR "OpenCV header not found in local backup."
+            "Please check the path: ${LOCAL_OPENCV_DIR}/include/opencv2/core.hpp")
+    endif()
+    #验证库文件存在
+    if(NOT EXITS "${LOCAL_OPENCV_DIR}/lib/libopencv_core.a" AND
+        NOT EXITS "${LOCAL_OPENCV_DIR}/lib/libopencv_core.so")
+        message(FATAL_ERROR "Local OpenCV libraries not found at ${LOCAL_OPENCV_DIR}/lib")
+    endif()
+    #创建导入目标
+    add_library(OpenCV::Core STATIC IMPORTED)
+    set_target_properties(OpenCV::Core PROPERTIES
+        INTERFACE_INCLUDE_DIRECTORIES "${LOCAL_OPENCV_DIR}/include"
+            IMPORTED_LOCATION "${LOCAL_OPENCV_DIR}/lib/${CMAKE_STATIC_LIBRARY_PREFIX}opencv_core${CMAKE_STATIC_LIBRARY_SUFFIX}"
+    )
+    set(OpenCV_FOUND TRUE) # 标记本地库可用
+endif()
+# [3] 最终可用性检查 -------------------------------------------------------
+if(NOT OpenCV_FOUND)
+    message(FATAL_ERROR "OpenCV not found, install system package or provide local build")
+endif()
+
+add_executable(ExternalLibDemo src/main.cpp)
+if(TARGET OpenCV::Core)
+    target_link_libraries(${PROJECT_NAME} PRIVATE OpenCV::Core)
+else()
+    target_link_libraries(${PROJCE_NAME} PRIVATE ${LOCAL_OPENCV_DIR}/lib/${CMAKE_STATIC_LIBRARY_PREFIX}opencv_core${CMAKE_STATIC_LIBRARY_SUFFIX})
+endif()
+
+# [6] 包含目录处理（现代CMake推荐方式）-------------------------------------
+target_include_directories(${PROJECT_NAME} PRIVATE
+        $<TARGET_PROPERTY:OpenCV::Core,INTERFACE_INCLUDE_DIRECTORIES>
+)
 
 
-
-#modular_project/
-#├── CMakeLists.txt           # 根配置
-#├── core/
-#│   ├── CMakeLists.txt
-#│   ├── core.h
-#│   └── core.cpp
-#├── gui/
-#│   ├── CMakeLists.txt
-#│   ├── window.h
-#│   └── window.cpp
-#└── main.cpp
-
+#external_lib_project/
+#├── CMakeLists.txt
+#├── src/
+#│   └── main.cpp
+#└── third_party/
+#    └── some_lib/            # 例如 Boost、OpenCV 的本地构建
+#        ├── include/
+#        └── lib/
